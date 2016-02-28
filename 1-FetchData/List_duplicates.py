@@ -9,25 +9,17 @@ for test in test_cases:
 		dates.append('#')
 		continue
 	vars = test.split(',')
-
-	y = vars[0].strip()
-	o = vars[1].strip()
-	d = vars[2].strip()
-	h = vars[3].strip()
-	m = vars[4].strip()
-	s = vars[5].strip()
-
-	y = str(int(y))
-	o = str(int(o))
-	d = str(int(d))
-	h = str(int(h))
-	m = str(int(m))
-	s = str(int(s))
+	y = str(int(vars[0].strip()))
+	o = str(int(vars[1].strip()))
+	d = str(int(vars[2].strip()))
+	h = str(int(vars[3].strip()))
+	m = str(int(vars[4].strip()))
+	s = str(int(vars[5].strip()))
 
 	res = y+'_'+o+'_'+d+'_'+h+'_'+m+'_'+s+'_'
 	if res in dates:
-		fi = dates.index(res)
-		print i, '=', fi+1
+		foundIdx = dates.index(res)
+		print 'Line', i, '=', foundIdx+1
 	dates.append(res)
 
 test_cases.close()
