@@ -7,6 +7,9 @@ filenames = [
 '902gdD10.html',
 '902gdE1.html',
 '902gdF2.html',
+'902gdA1y.html',  # A1 with names     #  Helpful to
+'902gdA2y.html',  # A2 with names     #    inspect
+'902gdA3y.html',  # A3 with names     #  duplicates
 ]
 
 import urllib    # works fine in Python 2.7.6
