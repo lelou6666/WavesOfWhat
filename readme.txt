@@ -19,13 +19,13 @@ When we use ecliptic longitudes the mean accuracy on validation sets is not high
 regardless of how we quantize the longitudes (quantization to 12 values produces the popular Zodiac signs).
 When we use the features suggested by Robert Doolaard's research, namely speed in distance
 quantized to only two values, and the same set of planets as in his Waves Of Wars paper,
-the mean accuracy is higher than 0.54 on validation sets and higher than 0.535 on our test set:
-Army Professionals from the unpublished volume F of Archives Gauquelin.
+the mean accuracy is higher than 0.54 on validation sets and higher than 0.535 on our test set,
+375 Army Professionals from the unpublished volume F of Archives Gauquelin.
 
 Because there are thousands of persons in validation sets
 the 0.54 mean accuracy is a statistically highly significant result.
 
 Archives Gauquelin:
 http://cura.free.fr/gauq/17archg.html
-Robert Doolaard's reserch:
+Robert Doolaard's research:
 http://cyclesresearchinstitute.org/pdf/cycles-history/CRI200602-Doolaard-WavesofWars.pdf
