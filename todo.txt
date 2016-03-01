@@ -1,0 +1,13 @@
+A list of things to do, sorted by importance, more important first
+
+1. Other test sets:
+   1a. Code for fetching from elsewhere (e.g. Wikipedia - this is a work in progress) and cleaning
+   1b. Code for applying trained classifiers to a variety of test sets
+
+2. Try excluding planets from current set {Jupiter, Saturn, Uranus, Neptune, Pluto}
+   Try including from set {Sun, Moon, Mercury, Venus, Mars, Eris, etc},
+   perhaps even orbital points like apogee and aphelion?
+
+3. Output the median accuracy across numIterations, or maybe min(median, mean),
+   because currently who knows, maybe most of the time accuracy is just slightly higher than 0.5,
+   only sometimes much much higher and this forces the mean to jump significantly higher than 0.5
