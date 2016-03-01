@@ -1,7 +1,7 @@
-We apply classifiers implemented in the scikit-learn machine learning package
+We apply 15 classifiers implemented in the scikit-learn machine learning package
 to astronomical factors derived from natal data of Professionals Notabilities from Archives Gauquelin.
 We train and evaluate classifiers on pairs of professions,
-sportsmen vs scientists, sportsmen vs militaries, scientists vs militaries.
+sportsmen versus scientists, sportsmen vs military, scientists vs military.
 
 Splitting into training and validation sets is always done in a stratified fashion:
 training sets are built so that the yearly frequencies are equalized.
@@ -25,8 +25,25 @@ quantized to only two values, and the same set of planets as in his Waves Of War
 the mean accuracy is higher than 0.54 on validation sets and higher than 0.535 on our test set,
 375 Army Professionals from the unpublished volume F of Archives Gauquelin.
 
-Because there are thousands of persons in validation sets
-the 0.54 mean accuracy is a statistically highly significant result.
+Because there are thousands of persons in validation sets (see below)
+the 0.54 mean accuracy is a statistically highly significant result!
+
+Quadratic Discriminant Analysis classifier apparently performs best on validation sets.
+Mean accuracies (across 1000 iterations) are
+0.553 and 0.559 - sportsmen and scientists in the Sportsmen-vs-Scientists pair
+0.402 and 0.706 - sportsmen and military
+0.418 and 0.659 - scientists and military
+The mean of 6 means is 0.5497 for this classifier.
+
+Sizes of groups:
+2886 sports champions
+4715 scientists & medical doctors
+3919 military men
+
+Sizes of training and validation sets:
+1414*2  1472  3301 - sportsmen vs scientists
+1374*2  1512  2545 - sportsmen vs military
+3392*2  1323   527 - scientists vs military
 
 Archives Gauquelin:
 http://cura.free.fr/gauq/17archg.html
