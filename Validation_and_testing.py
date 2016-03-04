@@ -110,12 +110,13 @@ def validationMain(mode,clf):
 				if a==1 and b==2:  sum5,sum6 = sum5 + accuracy1, sum6 + accuracy2
 	print '%1.7f' % (sum1/numIterations), '%1.7f' % (sum2/numIterations),
 	print '%1.7f' % (sum3/numIterations), '%1.7f' % (sum4/numIterations),
-	print '%1.7f' % (sum5/numIterations), '%1.7f' % (sum6/numIterations), '%4d' % failures,
+	print '%1.7f' % (sum5/numIterations), '%1.7f' % (sum6/numIterations), '%4d/%d ' % (failures, numIterations*6),
 	grandMean = (sum1+sum2+sum3+sum4+sum5+sum6)/(numIterations*6)
 	print ' Mean of 6 means: %1.7f' % grandMean, '%c' % ('!' if grandMean>bangThreshold else ' '), 'Mode', mode, datetime.utcnow()
 
 def testingMain(mode,swapLabels,clf):
 	sum1 = sum2 = sum3 = sum4 = sum5 = sum6 = failures = 0
+	accuracies = np.ndarray((6, numIterations))
 	for i in range(numIterations):
 		for a in range(2):
 				if swapLabels:
@@ -138,9 +139,18 @@ def testingMain(mode,swapLabels,clf):
 				if accuracy3<=0.5: failures += 1
 				if a==0:  sum1,sum2,sum5 = sum1 + accuracy1, sum2 + accuracy2, sum5 + accuracy3
 				if a==1:  sum3,sum4,sum6 = sum3 + accuracy1, sum4 + accuracy2, sum6 + accuracy3
-	print '%1.7f' % (sum1/numIterations), '%1.7f' % (sum2/numIterations),
-	print '%1.7f' % (sum3/numIterations), '%1.7f' % (sum4/numIterations), ' ',
-	print '%1.7f' % (sum5/numIterations), '%1.7f' % (sum6/numIterations), '%4d' % failures,
+				accuracies[a*3  ][i] = accuracy1
+				accuracies[a*3+1][i] = accuracy2
+				accuracies[a*3+2][i] = accuracy3
+	print '%1.5f' % (sum1/numIterations), '%1.5f'  % (sum2/numIterations),
+	print '%1.5f' % (sum3/numIterations), '%1.5f ' % (sum4/numIterations),
+	print '%1.5f' % (sum5/numIterations), '%1.5f'  % (sum6/numIterations), '%4d/%d ' % (failures, numIterations*2),
+	print '%1.5f'  % ( sum(sorted(accuracies[0])[numIterations/2-1 : numIterations/2+1]) / 2),  # assuming numIterations is even
+	print '%1.5f'  % ( sum(sorted(accuracies[1])[numIterations/2-1 : numIterations/2+1]) / 2),
+	print '%1.5f'  % ( sum(sorted(accuracies[3])[numIterations/2-1 : numIterations/2+1]) / 2),
+	print '%1.5f ' % ( sum(sorted(accuracies[4])[numIterations/2-1 : numIterations/2+1]) / 2),
+	print '%1.5f'  % ( sum(sorted(accuracies[2])[numIterations/2-1 : numIterations/2+1]) / 2),
+	print '%1.5f'  % ( sum(sorted(accuracies[5])[numIterations/2-1 : numIterations/2+1]) / 2),
 	grandMean = (sum5+sum6)/(numIterations*2)
 	print ' Mean of 2 means: %1.7f' % grandMean, '%c' % ('!' if grandMean>bangThreshold else ' '), 'Mode', mode, datetime.utcnow()
 
@@ -204,5 +214,7 @@ if 1:	#  'if 0'  when you want to skip this step
 	testingMain(mode+0.05, False,   ExtraTreesClassifier())
 	testingMain(mode+0.13, False, QuadraticDiscriminantAnalysis())
 	testingMain(mode+0.15, False, SVC())   # !!! Is very slow !!!
-	print 'Now lets try swapping labels:'
-	testingMain(mode+0.13, True,  QuadraticDiscriminantAnalysis())
+	# print 'Now lets try swapping labels:'
+	# testingMain(mode+0.13, True,  QuadraticDiscriminantAnalysis())
+	print 'QDA with bagging:'
+	testingMain(mode+0.613, False, BaggingClassifier(QuadraticDiscriminantAnalysis()))

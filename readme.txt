@@ -33,7 +33,7 @@ Sizes of groups:
 4715 scientists & medical doctors
 3919 military men
 
-Sizes of training and validation sets:
+Sizes of three training and six validation sets:
 1414*2  1472  3301 - sportsmen vs scientists
 1374*2  1512  2545 - sportsmen vs military
 3392*2  1323   527 - scientists vs military
@@ -46,6 +46,11 @@ Mean accuracies (across 1000 iterations) are
 The mean of 6 means is 0.5497 for this classifier.
 It correctly classifies 2658 persons on average in the first pair:
 floor(0.5530713*1472) + floor(0.5588122*3301) = 814 + 1844 = 2658
+
+And it correctly classifies more than 60% of military in the test set:
+248/375 on average in the  Sportsmen-vs-Military pair,
+230/375 on average in the Scientists-vs-Military pair.
+Exactly as during validation, sizes of training sets are 1374*2 and 3392*2 here, and a 1000 iterations.
 
 Archives Gauquelin:
 http://cura.free.fr/gauq/17archg.html
