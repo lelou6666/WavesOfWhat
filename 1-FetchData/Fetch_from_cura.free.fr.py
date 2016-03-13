@@ -3,22 +3,33 @@ filenames = [
 '902gdA1.html',
 '902gdA2.html',
 '902gdA3.html',
+
 '902gdD6.html',
 '902gdD10.html',
 '902gdE1.html',
+
 '902gdF2.html',
+
+'902gdA4.html',
+'902gdA5.html',
+'902gdA6.html',
+
 '902gdA1y.html',  # A1 with names     #  Helpful to
 '902gdA2y.html',  # A2 with names     #    inspect
 '902gdA3y.html',  # A3 with names     #  duplicates
+'902gdA4y.html',  # A4 with names
+'902gdA5y.html',  # A5 with names
+'902gdA6y.html',  # A6 with names
 ]
 
-import urllib    # works fine in Python 2.7.6
-for filename in filenames:
-	url = 'http://cura.free.fr/gauq/' + filename
-	html = urllib.urlopen(url).read()
-	file = open(filename, 'wt')
-	file.write(html)
-	file.close()
+if 1:   # if 0 to avoid overwritting html files
+	import urllib    # works fine in Python 2.7.6
+	for filename in filenames:
+		url = 'http://cura.free.fr/gauq/' + filename
+		html = urllib.urlopen(url).read()
+		file = open(filename, 'wt')
+		file.write(html)
+		file.close()
 
 def readLinesFromFile(srcFilename, headerID):
 	file = open(srcFilename, 'rt')
@@ -192,13 +203,22 @@ def processVolF2(srcFilename, dstFilename):  # A format similar to A1, A2, A3
 	dest.write('# End of data from Volume F2\n')
 	dest.close()
 
-processVolA(  filenames[0],                'SportsChampions_TimePlace.csv')
-processVolA(  filenames[1],       'ScientistsMedicalDoctors_TimePlace.csv')
-processVolA(  filenames[2],                    'MilitaryMen_TimePlace.csv')
-processVolD6( filenames[3],                'SportsChampions_TimePlace.csv')
-processVolD10(filenames[4], 'SP',          'SportsChampions_TimePlace.csv')
-processVolD10(filenames[4], 'SC', 'ScientistsMedicalDoctors_TimePlace.csv')
-processVolD10(filenames[4], 'MI',              'MilitaryMen_TimePlace.csv')
-processVolE1( filenames[5], 'MI',              'MilitaryMen_TimePlace.csv')
-processVolE1( filenames[5], 'PH', 'ScientistsMedicalDoctors_TimePlace.csv')
-processVolF2( filenames[6],                    'MilitaryMen_TimePlace.csv')
+if 1:
+	processVolA(  filenames[0],                'SportsChampions_TimePlace.csv')   # 2087
+	processVolA(  filenames[1],       'ScientistsMedicalDoctors_TimePlace.csv')   # 3643
+	processVolA(  filenames[2],                    'MilitaryMen_TimePlace.csv')   # 3045
+
+	processVolD6( filenames[3],                'SportsChampions_TimePlace.csv')   # 449
+
+	processVolD10(filenames[4], 'SC', 'ScientistsMedicalDoctors_TimePlace.csv')   # 98
+	processVolD10(filenames[4], 'MI',              'MilitaryMen_TimePlace.csv')   # 245
+	processVolD10(filenames[4], 'SP',          'SportsChampions_TimePlace.csv')   # 350
+
+	processVolE1( filenames[5], 'MI',              'MilitaryMen_TimePlace.csv')   # 629
+	processVolE1( filenames[5], 'PH', 'ScientistsMedicalDoctors_TimePlace.csv')   # 974, not 975, because 1 is a true duplicate
+
+	processVolF2( filenames[6],                    'MilitaryMen_TimePlace.csv')   # Don't use! Almost every Army Professional in this volume has a *twin* in one of the earlier volumes. Check with List_twins.py
+
+processVolA(  filenames[7],  'PaintersMusicians_TimePlace.csv')   # TODO: Inspect 2 duplicates and probably remove
+processVolA(  filenames[8],  'ActorsPoliticians_TimePlace.csv')   # TODO: Inspect 1 duplicate  and probably remove
+processVolA(  filenames[9], 'WritersJournalists_TimePlace.csv')
