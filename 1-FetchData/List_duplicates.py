@@ -1,14 +1,14 @@
 import sys
 dates = []
 i=0
-test_cases = open(sys.argv[1], 'r')
+file = open(sys.argv[1], 'r')
 
-for test in test_cases:
+for line in file:
 	i+=1
-	if test[0]=='#':
+	if line[0]=='#':
 		dates.append('#')
 		continue
-	vars = test.split(',')
+	vars = line.split(',')
 	y = str(int(vars[0].strip()))
 	o = str(int(vars[1].strip()))
 	d = str(int(vars[2].strip()))
@@ -22,4 +22,4 @@ for test in test_cases:
 		print 'Line', i, '=', foundIdx+1
 	dates.append(res)
 
-test_cases.close()
+file.close()

@@ -1,16 +1,19 @@
 Run Fetch_from_cura.free.fr.py
-It writes three csv files:
-
- MilitaryMen_TimePlace.csv
-
- ScientistsMedicalDoctors_TimePlace.csv
+It writes four csv files:
 
  SportsChampions_TimePlace.csv
 
-This is the main output.
+ ScientistsMedicalDoctors_TimePlace.csv
+
+ MilitaryMen_TimePlace.csv
+
+ HeredityVolB_TimePlace.csv
+
+This is the main output. The other three .csv are currently unused.
+
 Each line contains: year,month,day,hour,minute,second,latitude,longitude
 
-Note that here we process time zones very simply,
+NOTE that here we process time zones very simply,
 and  -24 < hour < 48 in the output.
 So the astronomy calculations module must take care of this.
 
@@ -37,10 +40,7 @@ it turns out all of them come from volume F2.
 Then it turns out almost every Army Professional from F2 has a *twin*
 in one of the earlier volumes:
 > python List_twins.py MilitaryMen_TimePlace.csv >mmTwins.txt
-We remove all of them, and don't use F2.
+We remove all of them, and don't use volume F2.
 
 Note one person in MilitaryMen has an invalid date of birth: 1869-2-29
-There was no Feb 29 in 1969, this person was commented out by Fetch_from_cura.free.fr.py
-
-Finally, we split three *_TimePlace.csv files into trn_* and tst_*
-as shown at the end of Fetch_from_cura.free.fr.py
+There was no Feb 29 in 1869, this person was commented out by Fetch_from_cura.free.fr.py
