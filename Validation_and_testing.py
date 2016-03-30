@@ -61,15 +61,15 @@ def splitIntoTrainingAndValidation(A, B):
 	freq1va = freqM - freq1tr              # and the remaining 20% for the validation set
 	freq2tr = np.copy(freq1tr)
 	freq2va = np.copy(freq1va)
-	trainsetSize = int(sum(freq1tr))
-	valdnsetSize = int(sum(freq1va))
-	testSet1size = len(data1) - trainsetSize - valdnsetSize
-	testSet2size = len(data2) - trainsetSize - valdnsetSize
-	X  = np.zeros((trainsetSize*2,            numFeatures))
-	Xv = np.zeros((valdnsetSize*2,            numFeatures))
+	trainingSetSize = int(sum(freq1tr))  # 1/2 size actually
+	validatnSetSize = int(sum(freq1va))
+	testSet1size = len(data1) - trainingSetSize - validatnSetSize
+	testSet2size = len(data2) - trainingSetSize - validatnSetSize
+	X  = np.zeros((trainingSetSize*2,         numFeatures))
+	Xv = np.zeros((validatnSetSize*2,         numFeatures))
 	Xt = np.zeros((testSet1size+testSet2size, numFeatures))
-	y  = np.ravel([([0]*trainsetSize) + ([1]*trainsetSize)])
-	yv = np.ravel([([0]*valdnsetSize) + ([1]*valdnsetSize)])
+	y  = np.ravel([([0]*trainingSetSize) + ([1]*trainingSetSize)])
+	yv = np.ravel([([0]*validatnSetSize) + ([1]*validatnSetSize)])
 	yt = np.ravel([([0]*testSet1size) + ([1]*testSet2size)])
 	trnIdx = vldIdx = tstIdx = 0
 	for item in data1:
@@ -77,13 +77,13 @@ def splitIntoTrainingAndValidation(A, B):
 		if   freq1tr[year] > 0:   X[trnIdx], trnIdx, freq1tr[year]  =  item[1:],  trnIdx+1,  freq1tr[year]-1
 		elif freq1va[year] > 0:  Xv[vldIdx], vldIdx, freq1va[year]  =  item[1:],  vldIdx+1,  freq1va[year]-1
 		else:                    Xt[tstIdx], tstIdx                 =  item[1:],  tstIdx+1
-	assert trnIdx==trainsetSize   and vldIdx==valdnsetSize   and tstIdx==testSet1size
+	assert trnIdx==trainingSetSize   and vldIdx==validatnSetSize   and tstIdx==testSet1size
 	for item in data2:
 		year = item[0]
 		if   freq2tr[year] > 0:   X[trnIdx], trnIdx, freq2tr[year]  =  item[1:],  trnIdx+1,  freq2tr[year]-1
 		elif freq2va[year] > 0:  Xv[vldIdx], vldIdx, freq2va[year]  =  item[1:],  vldIdx+1,  freq2va[year]-1
 		else:                    Xt[tstIdx], tstIdx                 =  item[1:],  tstIdx+1
-	assert trnIdx==trainsetSize*2 and vldIdx==valdnsetSize*2 and tstIdx==testSet1size+testSet2size
+	assert trnIdx==trainingSetSize*2 and vldIdx==validatnSetSize*2 and tstIdx==testSet1size+testSet2size
 	X, y = shuffle(X, y)   # Just in case... perhaps no reason to shuffle again here?
 	fs = SelectKBest(f_classif, k = numFeatures)   # TODO: try other feature selection methods?
 	fs.fit(np.concatenate((X, Xv)), np.concatenate((y, yv)))
