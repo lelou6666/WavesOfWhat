@@ -1,220 +1,139 @@
-import itertools, numpy as np
+import sklearn, scipy, numpy as np
 from datetime import datetime
-from sklearn.utils import shuffle
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble     import *
-np.random.seed(0)   # You should try other seeds
+from sklearn.utils             import shuffle
+from sklearn.linear_model      import LogisticRegression
+from sklearn.feature_selection import SelectKBest, f_classif   # As on scikit-learn.org/stable/modules/feature_selection.html
+np.random.seed(0)	# You should check other seeds
 
-filenames  = ['SportsChampions_LongitudesSIDs.csv', 'ScientistsMedicalDoctors_LongitudesSIDs.csv', 'MilitaryMen_LongitudesSIDs.csv', 'ArmyProfessionals_LongitudesSIDs.csv']
-#  From volumes:   A1, D6, D10                           A2, D10, E1                                    A3, D10, E1                   F2   This file is used as a testing set
-sourceSets = [[]]*len(filenames)
-freqs      = [[]]*len(filenames)
-numSets    =      len(filenames)-1
-numIterations = 1000  # If 1000 then full runtime is about 23 hours on a typical desktop with Intel Core i7 CPU. Full run is the run with all three 'if 1' below
-#numIterations = 500  # 1000+ is OK, please use smaller values for "a quick check" only, to see whether scikit-learn and related packages produce the same output on your system
+filenames = [                        # We assume each file contains: year, then 20 primary features (10 ecliptic longitudes, 10 currently unused speeds in distance)
+'SportsChampions_LongitudesSIDs.csv',
+'ScientistsMedicalDoctors_LongitudesSIDs.csv', 
+#'HeredityVolB_LongitudesSIDs.csv',             # Just two groups at a time in this version of code
+]
 
-def buildLongitudeFeatures(mode):
-    for n in range(numSets):
-	file = open(filenames[n], 'rt')
-	fromFile = [line.split(',') for line in file]
+numCelestialBodies = 10                     # TODO: dwarf planets? orbital points?
+numPrimaryFeatures = numCelestialBodies*2
+
+print str(datetime.utcnow())[0:19], "  sklearn %s  scipy %s  numpy %s" % (sklearn.__version__, scipy.__version__, np.__version__)
+freqs      = []
+sourceSets = []  # The n-th element is a 2d array with features of persons in filenames[n]. Rows are persons and columns are features
+for filename in filenames:
+	file = open(filename, 'rt')
+	fromFile = []
 	freq = np.zeros(2018)
-	for i in range(len(fromFile)):
-		if (mode&1): line = list(itertools.chain.from_iterable([[0], fromFile[i][6:11]]))  # As in Robert Doolaard's research, only Jupiter, Saturn, Uranus, Neptune, Pluto
-		else:        line = list(itertools.chain.from_iterable([[0], fromFile[i][1:11]]))  # All of them: Sun, Moon and 8 planets
-		line[0] = int(fromFile[i][0])
-		freq[line[0]] += 1
-		for j in range(1, len(line)):
-			if   mode<2:  line[j] =      float(line[j])
-			elif mode<4:  line[j] = int( float(line[j])/30 )     # Quantize to 12 values
-			elif mode<6:  line[j] = int( float(line[j])/90 )     # Quantize to  4 values
-			elif mode<8:  line[j] = int( float(line[j])/180)     # Quantize to  2 values
-			elif mode<10: line[j] = int( float(line[j])/30 ) % 3 # Quantize to 12 values, then mod 3
-			else:         line[j] = int( float(line[j])/30 ) % 4 # Quantize to 12 values, then mod 4
-		fromFile[i] = line
-	sourceSets[n] = fromFile
-	freqs[n] = freq
+	for line in file:
+		line = line.split(',')
+		assert len(line) == numPrimaryFeatures+1    #  +1 because the first item is year
+		year = int(line[0])
+		features = [ year ]
+		freq[year] += 1
 
-def buildSIDfeatures(mode):
-    for n in range(numSets):
-	file = open(filenames[n], 'rt')
-	fromFile = [line.split(',') for line in file]
-	freq = np.zeros(2018)
-	for i in range(len(fromFile)):
-		if (mode&1): line = list(itertools.chain.from_iterable([[0], fromFile[i][16:21]]))  # As in Robert Doolaard's research, only Jupiter, Saturn, Uranus, Neptune, Pluto
-		else:        line = list(itertools.chain.from_iterable([[0], fromFile[i][11:21]]))  # All of them: Sun, Moon and 8 planets
-		line[0] = int(fromFile[i][0])
-		freq[line[0]] += 1
-		for j in range(1, len(line)):
-			v = float(line[j])
-			if   mode<2: line[j] = v
-			elif mode<4: line[j] = (1 if v>0 else -1) + int(v*2)  # Quantize to 4 values
-			else:        line[j] = (1 if v>0 else -1)             # Quantize to 2 values
-		fromFile[i] = line
-	sourceSets[n] = fromFile
-	freqs[n] = freq
+		for i in range(numCelestialBodies):  # Ecliptic longitudes of Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
+			features.append( float(line[i+1]) )     #  +1 because the first item is year
 
-def splitIntoTrainingAndValidation(A,B):
-	freq1 = np.minimum(freqs[A], freqs[B])
-	freq2 = np.copy(freq1)
+		for i in range(7):  # Major aspects, as on en.wikipedia.org/w/index.php?title=Astrological_aspect&oldid=709116104#Major_aspects
+			count1 = count3 = count4 = count6 = 0
+			for k in range(7):
+				a = (features[k+1] - features[i+1] + 360) % 360    # TODO: Declinations? True angles in 3D space instead of ecliptic longitudes?
+				if   abs(a-180) <= 8 or abs(a-180) >= 172:  count1 += 1   # TODO: summarize more, so that only 3 or 2 are left?
+				elif abs(a-120) <= 6 or abs(a-240) <= 6:    count3 += 1
+				elif abs(a- 90) <= 6 or abs(a-270) <= 6:    count4 += 1
+				elif abs(a- 60) <= 4 or abs(a-300) <= 4:    count6 += 1   # TODO: minor aspects?
+			features.append(count1*0.75)  # because the total width is 32 degrees
+			features.append(count3)       #         the total width is 24 degrees
+			features.append(count4)       #         the total width is 24 degrees
+			features.append(count6*1.5)   # because the total width is 16 degrees
+
+		for i in range(numCelestialBodies):  # TODO: output tells us that features 6,7,8,9 (Saturn...Pluto) are never used. Should we rescale them differently?
+			features[i+1] /= 180     # Recale to [0, 2], approximately the same range as the aspect counts, they are rarely > 2
+
+		fromFile.append(features)
+
+	sourceSets.append(fromFile)
+	freqs.append(freq)
+numFeatures = len(sourceSets[0][0]) - 1  # Minus one because the first item is year
+
+def splitIntoTrainingAndValidation(A, B):
 	data1 = shuffle(sourceSets[A])    # Note this is a random shuffle, that's
-	data2 = shuffle(sourceSets[B])    #                                   why we need numIterations>=100
-	numFeatures  = len(data1[0]) - 1  # Minus one because the first item is year
-	trainsetSize = int(sum(freq1))
-	valiSet1size = int(len(data1) - trainsetSize)
-	valiSet2size = int(len(data2) - trainsetSize)
-	X  = np.zeros((trainsetSize*2, numFeatures))
-	Xv1= np.zeros((valiSet1size,   numFeatures))
-	Xv2= np.zeros((valiSet2size,   numFeatures))
-	y  = np.zeros(trainsetSize*2)
-	y[0:trainsetSize] = 1
-	#print trainsetSize, valiSet1size, valiSet2size,
-	assert len(data1)==trainsetSize+valiSet1size and len(data2)==trainsetSize+valiSet2size
-	trnIdx = vldIdx = 0
+	data2 = shuffle(sourceSets[B])    #                                   why we need many iterations
+	freqM = np.minimum(freqs[A], freqs[B])
+	freq1tr = np.round(freqM * 0.8)        # Randomly selected 80% for the training set,
+	freq1va = freqM - freq1tr              # and the remaining 20% for the validation set
+	freq2tr = np.copy(freq1tr)
+	freq2va = np.copy(freq1va)
+	trainsetSize = int(sum(freq1tr))
+	valdnsetSize = int(sum(freq1va))
+	testSet1size = len(data1) - trainsetSize - valdnsetSize
+	testSet2size = len(data2) - trainsetSize - valdnsetSize
+	X  = np.zeros((trainsetSize*2,            numFeatures))
+	Xv = np.zeros((valdnsetSize*2,            numFeatures))
+	Xt = np.zeros((testSet1size+testSet2size, numFeatures))
+	y  = np.ravel([([0]*trainsetSize) + ([1]*trainsetSize)])
+	yv = np.ravel([([0]*valdnsetSize) + ([1]*valdnsetSize)])
+	yt = np.ravel([([0]*testSet1size) + ([1]*testSet2size)])
+	trnIdx = vldIdx = tstIdx = 0
 	for item in data1:
 		year = item[0]
-		if freq1[year] > 0:
-			freq1[year] -= 1
-			X[trnIdx] = item[1:]
-			trnIdx += 1
-		else:
-			Xv1[vldIdx] = item[1:]
-			vldIdx += 1
-	assert trnIdx==trainsetSize and vldIdx==valiSet1size
-	vldIdx = 0
+		if   freq1tr[year] > 0:   X[trnIdx], trnIdx, freq1tr[year]  =  item[1:],  trnIdx+1,  freq1tr[year]-1
+		elif freq1va[year] > 0:  Xv[vldIdx], vldIdx, freq1va[year]  =  item[1:],  vldIdx+1,  freq1va[year]-1
+		else:                    Xt[tstIdx], tstIdx                 =  item[1:],  tstIdx+1
+	assert trnIdx==trainsetSize   and vldIdx==valdnsetSize   and tstIdx==testSet1size
 	for item in data2:
 		year = item[0]
-		if freq2[year] > 0:
-			freq2[year] -= 1
-			X[trnIdx] = item[1:]
-			trnIdx += 1
+		if   freq2tr[year] > 0:   X[trnIdx], trnIdx, freq2tr[year]  =  item[1:],  trnIdx+1,  freq2tr[year]-1
+		elif freq2va[year] > 0:  Xv[vldIdx], vldIdx, freq2va[year]  =  item[1:],  vldIdx+1,  freq2va[year]-1
+		else:                    Xt[tstIdx], tstIdx                 =  item[1:],  tstIdx+1
+	assert trnIdx==trainsetSize*2 and vldIdx==valdnsetSize*2 and tstIdx==testSet1size+testSet2size
+	X, y = shuffle(X, y)   # Just in case... perhaps no reason to shuffle again here?
+	fs = SelectKBest(f_classif, k = numFeatures)   # TODO: try other feature selection methods?
+	fs.fit(np.concatenate((X, Xv)), np.concatenate((y, yv)))
+	return X, y, Xv, yv, Xt, yt, testSet1size, testSet2size, fs.scores_
+
+classifier = LogisticRegression()
+sumTestingSetAccuracy = sum1 = sum2 = 0
+
+for ni in range(1, 10**6+1):  # Everything below will be executed a million times!
+	X, y, Xv, yv, Xt, yt, testSet1size, testSet2size, featureScores = splitIntoTrainingAndValidation(0, 1)
+	if ni==1:  print "Sizes of sets: ", X.shape[0], Xv.shape[0], testSet1size, testSet2size, " in training set, validation set, two test sets"
+	bestFeatureSet = []
+
+	# >>> Validation <<<   As of now, bestFeatureSet is the only output of validation phase. We could also pick a classifier here.
+	candidateFeatures = np.asarray(sorted(zip(featureScores, range(len(featureScores)))))[:,1]
+	X_training = X[ :, candidateFeatures[-1]].reshape(-1,1)  # X  with only a subset of features
+	X_validatn = Xv[:, candidateFeatures[-1]].reshape(-1,1)  # Xv with only a subset of features
+	bestValidationAccuracy = -1.0
+	for numFeaturesSelected in range(2, 21):  # Up to 20 features
+		featureIndex = candidateFeatures[-numFeaturesSelected]
+		X_training = np.hstack((X_training, X[ :, featureIndex].reshape(-1,1)))
+		X_validatn = np.hstack((X_validatn, Xv[:, featureIndex].reshape(-1,1)))
+		if numFeaturesSelected>2:
+			classifier.fit(X_training, y)
+			trainingAccuracy   = classifier.score(X_training, y)
+			validationAccuracy = classifier.score(X_validatn, yv)
+			if trainingAccuracy > 0.5 and validationAccuracy > bestValidationAccuracy:
+				bestValidationAccuracy = validationAccuracy
+				bestFeatureSet = list(reversed(np.int32(candidateFeatures[-numFeaturesSelected:])))
+			if numFeaturesSelected >= len(bestFeatureSet) + 3:  break  # Stop if the last 3 features were not helpful
+			bestValidationAccuracy += 0.0001  # A small penalty for increasing the model complexity
+	if bestFeatureSet==[]:  bestFeatureSet = list(reversed(np.int32(candidateFeatures[-3:])))     # Or assert bestFeatureSet!=[] ? Never happens?
+	# TODO: exclude one feature from bestFeatureSet if this improves bestValidationAccuracy. Then maybe another one... while bVA improves.
+			
+	# >>> Testing <<<   Build training and testing sets with the selected subset of features. Train classifier. Report accuracy on the testing sets.
+	X, y = np.concatenate((X, Xv)), np.concatenate((y, yv))
+	for  feature in bestFeatureSet:
+		if feature==bestFeatureSet[0]:
+			X_training = X[ :, feature].reshape(-1,1)  # X  with only a subset of features
+			X_testing  = Xt[:, feature].reshape(-1,1)  # Xt with only a subset of features
 		else:
-			Xv2[vldIdx] = item[1:]
-			vldIdx += 1
-	assert trnIdx==trainsetSize*2 and vldIdx==valiSet2size
-	X, y = shuffle(X, y)  # Just in case; perhaps no reason to shuffle here
-	return X, y, Xv1, Xv2, valiSet1size, valiSet2size   # Xv1 has label 1, Xv2 has label 0
-
-def validationMain(mode,clf):
-	sum1 = sum2 = sum3 = sum4 = sum5 = sum6 = failures = 0
-	for i in range(numIterations):
-		for a in range(numSets):
-			for b in range(a+1, numSets):
-				X, y, Xv1, Xv2, valiSet1size, valiSet2size = splitIntoTrainingAndValidation(a,b)
-				clf.fit(X, y)
-				accuracy1 = clf.score(Xv1,  np.ones(valiSet1size))
-				accuracy2 = clf.score(Xv2, np.zeros(valiSet2size))
-				if accuracy1<=0.5: failures += 1
-				if accuracy2<=0.5: failures += 1
-				if a==0 and b==1:  sum1,sum2 = sum1 + accuracy1, sum2 + accuracy2
-				if a==0 and b==2:  sum3,sum4 = sum3 + accuracy1, sum4 + accuracy2
-				if a==1 and b==2:  sum5,sum6 = sum5 + accuracy1, sum6 + accuracy2
-	print '%1.7f' % (sum1/numIterations), '%1.7f' % (sum2/numIterations),
-	print '%1.7f' % (sum3/numIterations), '%1.7f' % (sum4/numIterations),
-	print '%1.7f' % (sum5/numIterations), '%1.7f' % (sum6/numIterations), '%4d/%d ' % (failures, numIterations*6),
-	grandMean = (sum1+sum2+sum3+sum4+sum5+sum6)/(numIterations*6)
-	print ' Mean of 6 means: %1.7f' % grandMean, '%c' % ('!' if grandMean>bangThreshold else ' '), 'Mode', mode, datetime.utcnow()
-
-def testingMain(mode,swapLabels,clf):
-	sum1 = sum2 = sum3 = sum4 = sum5 = sum6 = failures = 0
-	accuracies = np.ndarray((6, numIterations))
-	for i in range(numIterations):
-		for a in range(2):
-				if swapLabels:
-					X, y, Xv1, Xv2, valiSet1size, valiSet2size = splitIntoTrainingAndValidation(2, a)  # here b=2
-				else:
-					X, y, Xv1, Xv2, valiSet1size, valiSet2size = splitIntoTrainingAndValidation(a, 2)  # here b=2
-				clf.fit(X, y)
-				data3 = shuffle(sourceSets[3])   # Perhaps no reason to shuffle?
-				numFeatures = len(data3[0]) - 1  # Minus one because the first item is year
-				testsetSize = len(data3)
-				Xtest= np.zeros((testsetSize, numFeatures))
-				for n in range(testsetSize):
-					Xtest[n] = data3[n][1:]
-				accuracy1 = clf.score(Xv1,   np.ones(valiSet1size))
-				accuracy2 = clf.score(Xv2,  np.zeros(valiSet2size))
-				if swapLabels:
-					accuracy3 = clf.score(Xtest, np.ones(testsetSize)) # Same label as the validation set with same profession
-				else:
-					accuracy3 = clf.score(Xtest,np.zeros(testsetSize)) # Same label as the validation set with same profession
-				if accuracy3<=0.5: failures += 1
-				if a==0:  sum1,sum2,sum5 = sum1 + accuracy1, sum2 + accuracy2, sum5 + accuracy3
-				if a==1:  sum3,sum4,sum6 = sum3 + accuracy1, sum4 + accuracy2, sum6 + accuracy3
-				accuracies[a*3  ][i] = accuracy1
-				accuracies[a*3+1][i] = accuracy2
-				accuracies[a*3+2][i] = accuracy3
-	print '%1.5f' % (sum1/numIterations), '%1.5f'  % (sum2/numIterations),
-	print '%1.5f' % (sum3/numIterations), '%1.5f ' % (sum4/numIterations),
-	print '%1.5f' % (sum5/numIterations), '%1.5f'  % (sum6/numIterations), '%4d/%d ' % (failures, numIterations*2),
-	print '%1.5f'  % ( sum(sorted(accuracies[0])[numIterations/2-1 : numIterations/2+1]) / 2),  # assuming numIterations is even
-	print '%1.5f'  % ( sum(sorted(accuracies[1])[numIterations/2-1 : numIterations/2+1]) / 2),
-	print '%1.5f'  % ( sum(sorted(accuracies[3])[numIterations/2-1 : numIterations/2+1]) / 2),
-	print '%1.5f ' % ( sum(sorted(accuracies[4])[numIterations/2-1 : numIterations/2+1]) / 2),
-	print '%1.5f'  % ( sum(sorted(accuracies[2])[numIterations/2-1 : numIterations/2+1]) / 2),
-	print '%1.5f'  % ( sum(sorted(accuracies[5])[numIterations/2-1 : numIterations/2+1]) / 2),
-	grandMean = (sum5+sum6)/(numIterations*2)
-	print ' Mean of 2 means: %1.7f' % grandMean, '%c' % ('!' if grandMean>bangThreshold else ' '), 'Mode', mode, datetime.utcnow()
-
-if 1:	#  'if 0'  when you want to skip this step
-	print 'Ecliptic longitudes:'
-	bangThreshold = 0.51
-	modes = range(12)
-	for mode in modes:
-		buildLongitudeFeatures(mode)
-		validationMain(mode, LogisticRegression(penalty='l1'))
-		validationMain(mode, LogisticRegression(penalty='l2'))
-		validationMain(mode, RandomForestClassifier())
-	print 'SIDs:'
-	modes = range(6)
-	for mode in modes:
-		buildSIDfeatures(mode)
-		validationMain(mode, LogisticRegression(penalty='l1'))
-		validationMain(mode, LogisticRegression(penalty='l2'))
-		validationMain(mode, RandomForestClassifier())
-	# After this step we only use SID features, and pick the only mode providing grandMean accuracy > 54%
-
-from sklearn.svm          import SVC
-from sklearn.tree         import DecisionTreeClassifier
-from sklearn.tree         import    ExtraTreeClassifier
-from sklearn.neighbors    import   KNeighborsClassifier
-from sklearn.neighbors    import NearestCentroid
-from sklearn.naive_bayes  import GaussianNB
-from sklearn.discriminant_analysis import    LinearDiscriminantAnalysis
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-
-if 1:	#  'if 0'  when you want to skip this step
-	print 'Other classifiers:'
-	bangThreshold = 0.5405
-	mode = 5
-	buildSIDfeatures(mode)
-	validationMain(mode+0.01, AdaBoostClassifier())
-	validationMain(mode+0.02, BaggingClassifier(KNeighborsClassifier()))  # as on http://scikit-learn.org/stable/modules/ensemble.html
-	validationMain(mode+0.03, DecisionTreeClassifier())
-	validationMain(mode+0.04,    ExtraTreeClassifier())
-	validationMain(mode+0.05,   ExtraTreesClassifier())
-	validationMain(mode+0.06, GaussianNB())
-	validationMain(mode+0.07, GradientBoostingClassifier())
-	validationMain(mode+0.08, KNeighborsClassifier())
-	validationMain(mode+0.09, LinearDiscriminantAnalysis())
-	validationMain(mode+0.10, LogisticRegression(penalty='l1'))
-	validationMain(mode+0.11, LogisticRegression(penalty='l2'))
-	validationMain(mode+0.12, NearestCentroid())
-	validationMain(mode+0.13, QuadraticDiscriminantAnalysis())
-	validationMain(mode+0.14, RandomForestClassifier())
-	validationMain(mode+0.15, SVC())   # !!! Is very slow !!!
-	# After this step we pick the top 5 classifiers (with best grandMean accuracy)
-
-if 1:	#  'if 0'  when you want to skip this step
-	print 'Testing set:'
-	numSets = len(filenames)  # Needed for testing, because our testing set is in the last file
-	bangThreshold = 0.51
-	mode = 5
-	buildSIDfeatures(mode)
-	testingMain(mode+0.03, False, DecisionTreeClassifier())
-	testingMain(mode+0.04, False,    ExtraTreeClassifier())
-	testingMain(mode+0.05, False,   ExtraTreesClassifier())
-	testingMain(mode+0.13, False, QuadraticDiscriminantAnalysis())
-	testingMain(mode+0.15, False, SVC())   # !!! Is very slow !!!
-	# print 'Now lets try swapping labels:'
-	# testingMain(mode+0.13, True,  QuadraticDiscriminantAnalysis())
-	print 'QDA with bagging:'
-	testingMain(mode+0.613, False, BaggingClassifier(QuadraticDiscriminantAnalysis()))
+			X_training = np.hstack((X_training, X[ :, feature].reshape(-1,1)))
+			X_testing  = np.hstack((X_testing , Xt[:, feature].reshape(-1,1)))
+	X_training, y = shuffle(X_training, y)   # Just in case... perhaps no reason to shuffle again here?
+	classifier.fit(X_training, y)
+	accuracy1 = classifier.score(X_testing[:testSet1size], yt[:testSet1size])  # Test Set 1
+	accuracy2 = classifier.score(X_testing[testSet1size:], yt[testSet1size:])  # Test Set 2
+	testingSetAccuracy = (accuracy1 + accuracy2)/2
+	sum1 += accuracy1
+	sum2 += accuracy2
+	sumTestingSetAccuracy += testingSetAccuracy
+	print "%4d iterations: the average testingSetAccuracy is %1.7f = (%1.7f+%1.7f)/2 " % (ni, sumTestingSetAccuracy/ni, sum1/ni, sum2/ni),
+	print "This time it's %1.7f = (%1.7f+%1.7f)/2, %d features:" % (testingSetAccuracy, accuracy1, accuracy2, len(bestFeatureSet)), bestFeatureSet
