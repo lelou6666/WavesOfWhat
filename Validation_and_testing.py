@@ -45,7 +45,7 @@ for filename in filenames:
 			features.append(count6*1.5)   # because the total width is 16 degrees
 
 		for i in range(numCelestialBodies):  # TODO: output tells us that features 6,7,8,9 (Saturn...Pluto) are never used. Should we rescale them differently?
-			features[i+1] /= 180     # Recale to [0, 2], approximately the same range as the aspect counts, they are rarely > 2
+			features[i+1] /= 180     # Rescale to [0, 2], approximately the same range as the aspect counts, they are rarely bigger than 2
 
 		fromFile.append(features)
 
@@ -70,7 +70,7 @@ def splitIntoTrainingAndValidation(A, B):
 	Xt = np.zeros((testSet1size+testSet2size, numFeatures))
 	y  = np.ravel([([0]*trainingSetSize) + ([1]*trainingSetSize)])
 	yv = np.ravel([([0]*validatnSetSize) + ([1]*validatnSetSize)])
-	yt = np.ravel([([0]*testSet1size) + ([1]*testSet2size)])
+	yt = np.ravel([([0]*testSet1size)    + ([1]*testSet2size)])
 	trnIdx = vldIdx = tstIdx = 0
 	for item in data1:
 		year = item[0]
@@ -136,4 +136,4 @@ for ni in range(1, 10**6+1):  # Everything below will be executed a million time
 	sum2 += accuracy2
 	sumTestingSetAccuracy += testingSetAccuracy
 	print "%4d iterations: the average testingSetAccuracy is %1.7f = (%1.7f+%1.7f)/2 " % (ni, sumTestingSetAccuracy/ni, sum1/ni, sum2/ni),
-	print "This time it's %1.7f = (%1.7f+%1.7f)/2, %d features:" % (testingSetAccuracy, accuracy1, accuracy2, len(bestFeatureSet)), bestFeatureSet
+	print "This time it's %1.7f = (%1.7f+%1.7f)/2, %2d features:" % (testingSetAccuracy, accuracy1, accuracy2, len(bestFeatureSet)), bestFeatureSet
