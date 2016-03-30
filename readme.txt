@@ -30,6 +30,7 @@ in the Sportsmen-vs-H.E.subjects pair it is higher than 53%,
 and because there are more than 22 thousand persons in testing sets
 the 0.53 mean accuracy is a statistically highly significant result.
 Please see files Output*.txt for more details.
+0.5259 is also a statistically significant result.
 
 Sizes of groups:
  2886 sports champions from all volumes, namely A1, D6, D10
