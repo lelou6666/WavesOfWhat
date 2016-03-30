@@ -22,7 +22,7 @@ double fromSwe[6], maxabs[] = {
 
 void main(int argc, char *argv[])
 {
-int i, ct, iflgret, iflg = SEFLG_TRUEPOS + SEFLG_SPEED + SEFLG_NOABERR + SEFLG_NOGDEFL;  // remove TRUEPOS?
+int i, ct, iflgret, iflg = SEFLG_TRUEPOS + SEFLG_SWIEPH + SEFLG_SPEED + SEFLG_NOABERR + SEFLG_NOGDEFL;  // remove TRUEPOS?
 char err[256], fileBuf[32768];
 
 if (argc==1) {
